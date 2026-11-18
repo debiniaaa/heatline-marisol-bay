@@ -12,6 +12,10 @@
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
+// HEATLINE: Marisol Bay — this entry program hands in the game in game/: an original
+// open-world crime game (a pastel bay city, stealable cars, a wanted system with real
+// pursuit, a three-job story and courier work, all synthesized sound). The plumbing
+// below is the kit's; the night it delivers is mine.
 import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';

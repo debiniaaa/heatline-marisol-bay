@@ -3,17 +3,130 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Block Dodger</title>
+<title>HEATLINE: Marisol Bay</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #11141b; }
-  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  /* Read aloud, never shown: the status line screen readers announce. */
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #1a0f1e; font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif; }
+  #scene { position: fixed; inset: 0; }
+  #scene canvas { display: block; }
   #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* ---------- HUD ---------- */
+  #hud { position: fixed; inset: 0; pointer-events: none; color: #fff; z-index: 5; }
+  #hud.hidden, .hidden { display: none !important; }
+  .panel { background: rgba(16, 10, 24, .55); border: 1px solid rgba(255, 205, 130, .35); border-radius: 10px; backdrop-filter: blur(3px); }
+  #vitals { position: absolute; left: 18px; top: 16px; padding: 10px 14px; min-width: 190px; }
+  #cash { font-size: 24px; font-weight: 800; color: #8dffb0; letter-spacing: .5px; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
+  #cash small { font-size: 12px; color: #ffe1a8; font-weight: 600; display: block; letter-spacing: 2px; }
+  #healthWrap { margin-top: 7px; height: 12px; background: rgba(255,255,255,.15); border-radius: 6px; overflow: hidden; }
+  #healthBar { height: 100%; width: 100%; background: linear-gradient(90deg, #ff5d73, #ff9d5c); border-radius: 6px; transition: width .15s; }
+  #armorLine { font-size: 11px; color: #cfe8ff; margin-top: 4px; letter-spacing: 1px; }
+  #wantedBox { position: absolute; right: 18px; top: 16px; text-align: right; padding: 8px 12px; }
+  #stars { font-size: 26px; letter-spacing: 3px; color: #ffd94d; text-shadow: 0 0 10px rgba(255,180,0,.8), 0 2px 4px rgba(0,0,0,.7); }
+  #stars .off { color: rgba(255,255,255,.22); text-shadow: none; }
+  #wantedLabel { font-size: 10px; letter-spacing: 3px; color: #ffb3ab; }
+  #minimap { position: absolute; right: 18px; top: 108px; border-radius: 10px; border: 1px solid rgba(255,205,130,.4); background: rgba(10,14,26,.72); }
+  #speedo { position: absolute; right: 22px; bottom: 20px; text-align: right; padding: 8px 14px; }
+  #speedo b { font-size: 34px; font-weight: 800; }
+  #speedo span { font-size: 12px; color: #ffe1a8; letter-spacing: 2px; display: block; }
+  #objective { position: absolute; left: 50%; transform: translateX(-50%); top: 16px; max-width: 560px; padding: 10px 18px; text-align: center; }
+  #objectiveTitle { font-size: 11px; letter-spacing: 3px; color: #ffd98a; }
+  #objectiveText { font-size: 16px; font-weight: 600; margin-top: 2px; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+  #objectiveDist { font-size: 12px; color: #9be7ff; margin-top: 1px; }
+  #prompt { position: absolute; left: 50%; transform: translateX(-50%); bottom: 120px; padding: 8px 16px; font-size: 15px; font-weight: 600; }
+  #prompt b { color: #ffd94d; border: 1px solid #ffd94d; border-radius: 4px; padding: 0 6px; margin-right: 6px; }
+  #banner { position: absolute; left: 50%; top: 30%; transform: translate(-50%,-50%); text-align: center; opacity: 0; transition: opacity .3s; }
+  #bannerTitle { font-size: 44px; font-weight: 900; letter-spacing: 4px; color: #fff; text-shadow: 0 4px 24px rgba(255,120,60,.9), 0 2px 4px rgba(0,0,0,.8); }
+  #bannerSub { font-size: 17px; color: #ffe1a8; margin-top: 4px; text-shadow: 0 2px 6px rgba(0,0,0,.9); }
+  #crosshair { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); font-size: 22px; color: rgba(255,255,255,.9); text-shadow: 0 0 6px #000; }
+  #bustWrap { position: absolute; left: 50%; transform: translateX(-50%); bottom: 190px; width: 240px; text-align: center; }
+  #bustLabel { font-size: 11px; letter-spacing: 3px; color: #ff9d94; text-shadow: 0 1px 4px #000; }
+  #bustOuter { height: 9px; background: rgba(255,255,255,.18); border-radius: 5px; overflow: hidden; margin-top: 3px; }
+  #bustBar { height: 100%; width: 0%; background: #ff5347; }
+  #toast { position: absolute; left: 18px; bottom: 20px; max-width: 330px; padding: 10px 14px; font-size: 13.5px; line-height: 1.45; }
+  #toast b { color: #ffd98a; }
+  #vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 55%, rgba(200,0,20,.55) 100%); opacity: 0; z-index: 6; }
+
+  /* ---------- Overlays ---------- */
+  .overlay { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; color: #fff; background: linear-gradient(180deg, rgba(26,8,32,.25) 0%, rgba(26,8,32,.55) 78%, rgba(10,4,16,.88) 100%); }
+  .kicker { letter-spacing: 6px; font-size: 13px; color: #ffd98a; text-transform: uppercase; }
+  h1.title { font-family: Georgia, "Times New Roman", serif; font-size: 76px; margin: 6px 0 0; letter-spacing: 3px; line-height: .95; background: linear-gradient(180deg, #fff6d8 15%, #ffc46b 55%, #ff7e5f 90%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 4px 14px rgba(0,0,0,.55)); }
+  .subtitle { font-family: Georgia, serif; font-style: italic; font-size: 21px; color: #ffe9c4; margin-top: 8px; text-shadow: 0 2px 8px rgba(0,0,0,.8); }
+  .blurb { max-width: 620px; font-size: 15px; line-height: 1.55; color: #f3e9ff; margin: 16px 20px 4px; text-shadow: 0 1px 5px rgba(0,0,0,.9); }
+  .controls { display: flex; gap: 8px 22px; flex-wrap: wrap; justify-content: center; max-width: 700px; margin: 14px 20px 20px; font-size: 13px; color: #d9ecff; }
+  .controls b { color: #ffd94d; font-weight: 700; }
+  .btn { pointer-events: auto; cursor: pointer; border: 1px solid rgba(255,217,138,.8); background: linear-gradient(180deg, rgba(255,150,80,.28), rgba(190,60,90,.28)); color: #fff; font-size: 17px; font-weight: 700; letter-spacing: 2px; padding: 12px 34px; border-radius: 30px; margin: 4px; text-transform: uppercase; }
+  .btn:hover { background: linear-gradient(180deg, rgba(255,170,90,.5), rgba(220,80,110,.5)); }
+  .btn.ghost { background: rgba(20,14,34,.5); font-size: 14px; padding: 10px 24px; }
+  #endTitle { font-size: 64px; }
+  .fine { font-size: 15px; color: #ffb3ab; }
 </style>
 </head>
 <body>
-<canvas id="game" aria-label="Block Dodger: move the paddle left and right to dodge falling blocks and catch coins"></canvas>
+<div id="scene" aria-label="HEATLINE: Marisol Bay — a 3D open-world crime game"></div>
 <p id="status" role="status" aria-live="polite"></p>
+
+<div id="hud" class="hidden">
+  <div id="vitals" class="panel">
+    <div id="cash"><small>CASH</small>$250</div>
+    <div id="healthWrap"><div id="healthBar"></div></div>
+    <div id="armorLine">MARISOL BAY · EST. 1926</div>
+  </div>
+  <div id="wantedBox" class="panel">
+    <div id="stars"></div>
+    <div id="wantedLabel">WANTED</div>
+  </div>
+  <canvas id="minimap" width="184" height="184"></canvas>
+  <div id="speedo" class="panel hidden"><b id="speedVal">0</b><span>MPH · <i id="carName">FOOT</i></span></div>
+  <div id="objective" class="panel hidden">
+    <div id="objectiveTitle">OBJECTIVE</div>
+    <div id="objectiveText"></div>
+    <div id="objectiveDist"></div>
+  </div>
+  <div id="prompt" class="panel hidden"></div>
+  <div id="bustWrap" class="hidden"><div id="bustLabel">BUSTED IN…</div><div id="bustOuter"><div id="bustBar"></div></div></div>
+  <div id="banner"><div id="bannerTitle"></div><div id="bannerSub"></div></div>
+  <div id="crosshair" class="hidden">＋</div>
+  <div id="toast" class="panel hidden"></div>
+</div>
+<div id="vignette"></div>
+
+<div id="startScreen" class="overlay">
+  <div class="kicker">Marisol Bay Police Blotter · One Night Only</div>
+  <h1 class="title">HEATLINE</h1>
+  <div class="subtitle">— Marisol Bay —</div>
+  <p class="blurb">The sun never sets on a good score. You are <b>Rio Calloway</b>, a wheelman fresh off the bus with
+  empty pockets and a borrowed name. Fixer <b>Sol Vega</b> has work, the Fontaine crew has grudges, and the
+  Marisol Bay PD has a brand-new helicopter fund to justify. Run the jobs, mind the stars, make the front page.</p>
+  <div class="controls">
+    <span><b>W A S D</b> move / drive</span><span><b>Mouse</b> look</span><span><b>E</b> enter / steal car</span>
+    <span><b>Click</b> shoot (pistol drawn)</span><span><b>F</b> melee</span><span><b>X</b> draw / holster</span>
+    <span><b>Shift</b> sprint / boost</span><span><b>Space</b> handbrake</span><span><b>Q</b> courier job</span><span><b>P</b> pause</span>
+  </div>
+  <div>
+    <button class="btn" id="startBtn">Start Night</button>
+    <button class="btn ghost hidden" id="continueBtn">Continue</button>
+  </div>
+</div>
+
+<div id="pauseScreen" class="overlay hidden">
+  <div class="kicker">Paused</div>
+  <h1 class="title" style="font-size:52px">ON ICE</h1>
+  <p class="blurb">The bay keeps moving without you. For a second.</p>
+  <div>
+    <button class="btn" id="resumeBtn">Resume</button>
+    <button class="btn ghost" id="restartBtn">Restart Night</button>
+  </div>
+</div>
+
+<div id="endScreen" class="overlay hidden">
+  <div class="kicker" id="endKicker">Marisol Bay PD</div>
+  <h1 class="title" id="endTitle">BUSTED</h1>
+  <p class="blurb" id="endText"></p>
+  <p class="fine" id="endFine"></p>
+  <div><button class="btn" id="endBtn">Back on the Street</button></div>
+</div>
+
+<script src="./vendor/three.min.js"></script>
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>
