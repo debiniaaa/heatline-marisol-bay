@@ -26,6 +26,16 @@ export function initMissions(scene) {
   scene.add(beacon); scene.add(beaconRing);
 }
 
+export function resetMissions() {
+  active = null;
+  if (coupe) {
+    S.scene.remove(coupe.group);
+    const i = S.cars.indexOf(coupe);
+    if (i >= 0) S.cars.splice(i, 1);
+    coupe = null;
+  }
+}
+
 export function getMissionTarget() {
   if (active) { const s = active.steps[active.step]; return s.dynamic ? s.dynamic() : s.at; }
   if (S.storyIndex < 3 && !S.storyDone) return LOCATIONS.cafe;

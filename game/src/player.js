@@ -64,7 +64,7 @@ function updatePlayer(dt, player) {
   // move relative to the camera yaw
   const k = S.keys;
   const f = { x: Math.sin(player.yaw), z: Math.cos(player.yaw) };
-  const r = { x: -f.z, z: f.x }; // wait: right = (-fz, fx) — see below, corrected by construction
+  // right of the view direction is (-f.z, f.x); the strafe keys below use it inline
   let mx = 0, mz = 0;
   if (k['KeyW'] || k['ArrowUp']) { mx += f.x; mz += f.z; }
   if (k['KeyS'] || k['ArrowDown']) { mx -= f.x; mz -= f.z; }

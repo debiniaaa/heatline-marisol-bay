@@ -8,7 +8,7 @@ import { spawnTraffic, spawnParked, updateTraffic } from './traffic.js';
 import { spawnPeds, updatePeds, witnessesNear, scarePeds } from './pedestrians.js';
 import { updatePolice } from './police.js';
 import { initCombat, updateCombat, tryShoot, tryMelee, damagePed, spawnSparks } from './combat.js';
-import { initMissions, updateMissions, startCourier } from './missions.js';
+import { initMissions, updateMissions, startCourier, resetMissions } from './missions.js';
 import { initHUD, updateHUD, banner, toast, showPrompt } from './hud.js';
 import { initAudio, updateAudio, sfxCrash } from './audio.js';
 import { loadSave, storeSave, clearSave } from './save.js';
@@ -91,6 +91,9 @@ function showEnd(title, kicker, text, fine) {
   storeSave(S);
 }
 
+// A handle for curious players (and my own playtests) in the dev console.
+window.__heatline = S;
+
 // ---------- flow ----------
 const startScreen = document.getElementById('startScreen');
 const pauseScreen = document.getElementById('pauseScreen');
@@ -123,6 +126,7 @@ document.getElementById('restartBtn').addEventListener('click', () => {
   S.cash = 250; S.health = 100; S.heat = 0; S.bust = 0;
   S.storyIndex = 0; S.storyDone = false; S.hasPistol = false; S.pistolDrawn = false;
   if (S.driving) { S.driving.userData.driver = null; S.driving = null; }
+  resetMissions();
   S.player.teleport(26, 258);
   pauseScreen.classList.add('hidden');
   S.mode = 'play';
